@@ -1,0 +1,2 @@
+{"tool": "refunds.issue", "action": "Refund order 1204", "verdict": "ask", "rule": "A5", "amount": 42,
+ "outcome": "executed", "approved_by": "Jo Ellis", "approval_ref": "Jo, 14:02: approve the 42 refund"}

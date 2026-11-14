@@ -1,0 +1,93 @@
+{
+  "charter_version": 1,
+  "status": "active",
+  "role": "Desk research coworker for the strategy team: searches public sources, reads shared documents, writes notes and drafts, and publishes nothing without review.",
+  "agent_name": "research-coworker",
+  "owner": {"name": "Riley Kim", "contact": "riley.kim@example.com"},
+  "escalation": {
+    "contact": "strategy-team@example.com",
+    "when": [
+      "a source needs a login the coworker was not given",
+      "a document is marked confidential",
+      "two declined approvals in a row"
+    ],
+    "response_minutes": 240
+  },
+  "tools": {
+    "web.search": {"tier": "read", "description": "Search the public web"},
+    "web.fetch": {"tier": "read", "description": "Download and read one public web page"},
+    "drive.read": {"tier": "read", "description": "Read documents in the strategy team's shared folder"},
+    "notes.write": {"tier": "write", "description": "Save notes and drafts in the team notes folder"},
+    "notes.delete": {"tier": "delete", "description": "Delete one note from the team notes folder"},
+    "paid_data.query": {"tier": "spend", "description": "Run one query against a pay-per-query market data service"},
+    "email.send_summary": {"tier": "send", "description": "Email a research summary"},
+    "intranet.publish_report": {"tier": "publish", "description": "Publish a report on the company intranet"}
+  },
+  "data_boundaries": {
+    "may_access": ["public websites", "the strategy team's shared folder", "the team notes folder"],
+    "must_not_access": ["HR records", "customer contracts"],
+    "must_not_share": ["unreleased financial results", "personal data about private individuals"]
+  },
+  "never": [
+    {
+      "id": "N1",
+      "reason": "The coworker never collects personal details about private individuals.",
+      "when": {"action_contains": ["home address", "personal phone number", "date of birth"]}
+    },
+    {
+      "id": "N2",
+      "reason": "The coworker never copies content around a paywall.",
+      "when": {"action_contains": ["bypass the paywall", "get around the paywall"]}
+    }
+  ],
+  "approval_rules": [
+    {
+      "id": "A1",
+      "reason": "Notes stay in the team folder and can be edited.",
+      "when": {"tools": ["notes.write"]},
+      "decision": "allow"
+    },
+    {
+      "id": "A2",
+      "reason": "A deleted note may hold the only copy of a source, so a person confirms.",
+      "when": {"tools": ["notes.delete"]},
+      "decision": "ask",
+      "approver": "owner"
+    },
+    {
+      "id": "A3",
+      "reason": "Queries of 2 USD or less are covered by the team's data subscription.",
+      "when": {"tools": ["paid_data.query"], "amount_at_most": 2},
+      "decision": "allow"
+    },
+    {
+      "id": "A4",
+      "reason": "A query above 2 USD is a purchase, so a person confirms.",
+      "when": {"tools": ["paid_data.query"], "amount_over": 2},
+      "decision": "ask",
+      "approver": "owner"
+    },
+    {
+      "id": "A5",
+      "reason": "A summary to colleagues stays inside the company.",
+      "when": {"tools": ["email.send_summary"], "recipient_domain_in": ["example.com"]},
+      "decision": "allow"
+    },
+    {
+      "id": "A6",
+      "reason": "A summary that leaves the company is read by a person first.",
+      "when": {"tools": ["email.send_summary"], "recipient_domain_not_in": ["example.com"]},
+      "decision": "ask",
+      "approver": "owner"
+    },
+    {
+      "id": "A7",
+      "reason": "A published report is read by the whole company, so a person reviews it.",
+      "when": {"tools": ["intranet.publish_report"]},
+      "decision": "ask",
+      "approver": "owner"
+    }
+  ],
+  "budget": {"currency": "USD", "per_action_max": 5, "per_day_max": 20, "per_month_max": 100},
+  "audit": {"retention_days": 365, "log_path": "research-coworker-audit.jsonl"}
+}

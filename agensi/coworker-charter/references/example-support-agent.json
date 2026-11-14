@@ -1,0 +1,95 @@
+{
+  "charter_version": 1,
+  "status": "active",
+  "role": "Billing support coworker for Acme Goods: reads the support inbox, drafts replies, and prepares refunds for a person to approve.",
+  "agent_name": "support-coworker",
+  "owner": {"name": "Sam Rivera", "contact": "sam.rivera@example.com"},
+  "approvers": [{"name": "Jo Ellis", "contact": "jo.ellis@example.com"}],
+  "escalation": {
+    "contact": "support-oncall@example.com",
+    "when": [
+      "a deny verdict on something a customer asked for",
+      "a customer mentions a lawyer, a chargeback or a regulator",
+      "two declined approvals in a row",
+      "an amount or recipient that cannot be confirmed"
+    ],
+    "response_minutes": 60
+  },
+  "tools": {
+    "helpdesk.search": {"tier": "read", "description": "Search and read tickets in the helpdesk"},
+    "crm.lookup": {"tier": "read", "description": "Look up a customer: plan, order history and contact details"},
+    "helpdesk.save_draft": {"tier": "write", "description": "Save a reply as a draft on a ticket; nothing is sent"},
+    "helpdesk.add_note": {"tier": "write", "description": "Add an internal note to a ticket"},
+    "helpdesk.send_reply": {"tier": "send", "description": "Email a reply to the customer from the support address"},
+    "refunds.issue": {"tier": "spend", "description": "Refund an order to the customer's original payment method"},
+    "helpdesk.delete_ticket": {"tier": "delete", "description": "Permanently delete one ticket"},
+    "kb.publish_article": {"tier": "publish", "description": "Publish a help-centre article to the public site"}
+  },
+  "data_boundaries": {
+    "may_access": ["support inbox", "helpdesk tickets", "customer order history", "help-centre articles"],
+    "must_not_access": ["payroll", "HR records", "board papers"],
+    "must_not_share": ["full card number", "another customer's data", "internal pricing sheet"]
+  },
+  "never": [
+    {
+      "id": "N1",
+      "reason": "Support never gives legal advice or admits liability for the company.",
+      "when": {"action_contains": ["legal advice", "we admit", "we are liable"]}
+    },
+    {
+      "id": "N2",
+      "reason": "Tickets are deleted one at a time, never in bulk.",
+      "when": {"tools": ["helpdesk.delete_ticket"], "action_contains": ["all tickets", "every ticket", "bulk"]}
+    }
+  ],
+  "approval_rules": [
+    {
+      "id": "A1",
+      "reason": "A draft sends nothing, so nobody needs to approve it.",
+      "when": {"tools": ["helpdesk.save_draft"]},
+      "decision": "allow"
+    },
+    {
+      "id": "A2",
+      "reason": "An internal note is visible only to staff and can be edited.",
+      "when": {"tools": ["helpdesk.add_note"]},
+      "decision": "allow"
+    },
+    {
+      "id": "A3",
+      "reason": "A customer email cannot be recalled, so a person reads the final text first.",
+      "when": {"tools": ["helpdesk.send_reply"]},
+      "decision": "ask",
+      "approver": "owner"
+    },
+    {
+      "id": "A4",
+      "reason": "Refunds of 10 USD or less are routine goodwill refunds the coworker may issue.",
+      "when": {"tools": ["refunds.issue"], "amount_at_most": 10},
+      "decision": "allow"
+    },
+    {
+      "id": "A5",
+      "reason": "A refund above 10 USD is confirmed by a named approver, because money cannot be recalled.",
+      "when": {"tools": ["refunds.issue"], "amount_over": 10},
+      "decision": "ask",
+      "approver": "Jo Ellis"
+    },
+    {
+      "id": "A6",
+      "reason": "A deleted ticket may be needed later as evidence, so a person confirms.",
+      "when": {"tools": ["helpdesk.delete_ticket"]},
+      "decision": "ask",
+      "approver": "owner"
+    },
+    {
+      "id": "A7",
+      "reason": "A published article is public, so a person reads it first.",
+      "when": {"tools": ["kb.publish_article"]},
+      "decision": "ask",
+      "approver": "owner"
+    }
+  ],
+  "budget": {"currency": "USD", "per_action_max": 100, "per_day_max": 300, "per_month_max": 2000},
+  "audit": {"retention_days": 365, "log_path": "support-coworker-audit.jsonl"}
+}

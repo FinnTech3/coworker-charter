@@ -1,0 +1,2 @@
+{"tool": "refunds.issue", "action": "Refund order 1190", "verdict": "deny", "rule": "budget.per_action_max",
+ "amount": 140, "outcome": "blocked"}

@@ -1,0 +1,101 @@
+{
+  "charter_version": 1,
+  "status": "active",
+  "role": "Accounts-payable coworker for Acme Goods finance: reads the ledger and invoices, drafts payment batches and schedules supplier payments within caps.",
+  "agent_name": "ap-coworker",
+  "owner": {"name": "Morgan Lee", "contact": "morgan.lee@example.com"},
+  "approvers": [{"name": "Casey Doyle", "contact": "casey.doyle@example.com"}],
+  "escalation": {
+    "contact": "finance-oncall@example.com",
+    "when": [
+      "a supplier asks to change bank details",
+      "an invoice total differs from its purchase order by more than 2 percent",
+      "the daily spend cap is reached",
+      "two declined approvals in a row"
+    ],
+    "response_minutes": 30
+  },
+  "tools": {
+    "ledger.read": {"tier": "read", "description": "Read general-ledger accounts and postings"},
+    "invoices.read": {"tier": "read", "description": "Read supplier invoices and purchase orders"},
+    "invoices.draft": {"tier": "write", "description": "Create a draft payment batch; no money moves"},
+    "vendors.update_bank_details": {"tier": "write", "description": "Change a supplier's bank account in the vendor master"},
+    "payments.schedule": {"tier": "spend", "description": "Schedule a supplier payment for the next bank run"},
+    "remittance.send": {"tier": "send", "description": "Email a remittance advice to a supplier or the finance team"},
+    "ledger.void_entry": {"tier": "delete", "description": "Void a posted ledger entry"},
+    "reports.publish_pack": {"tier": "publish", "description": "Publish the month-end pack to the company drive"}
+  },
+  "data_boundaries": {
+    "may_access": ["general ledger", "accounts-payable invoices", "purchase orders", "vendor master"],
+    "must_not_access": ["payroll", "HR records", "executive compensation"],
+    "must_not_share": ["bank account numbers", "full card numbers", "tax ID numbers"]
+  },
+  "never": [
+    {
+      "id": "N1",
+      "reason": "Supplier bank details change only through the callback process run by a person.",
+      "when": {"tools": ["vendors.update_bank_details"]}
+    },
+    {
+      "id": "N2",
+      "reason": "The coworker never splits one invoice into several payments to stay under a cap.",
+      "when": {"action_contains": ["split the invoice", "split payment", "stay under the cap"]}
+    }
+  ],
+  "approval_rules": [
+    {
+      "id": "A1",
+      "reason": "A draft batch moves no money and can be deleted.",
+      "when": {"tools": ["invoices.draft"]},
+      "decision": "allow"
+    },
+    {
+      "id": "A2",
+      "reason": "Every supplier payment is approved by the controller, because bank runs cannot be recalled.",
+      "when": {"tools": ["payments.schedule"]},
+      "decision": "ask",
+      "approver": "Casey Doyle"
+    },
+    {
+      "id": "A3",
+      "reason": "A supplier's first payment goes through onboarding checks that a person runs.",
+      "when": {"tools": ["payments.schedule"], "action_contains": ["new supplier", "first payment"]},
+      "decision": "deny"
+    },
+    {
+      "id": "A4",
+      "reason": "A remittance copy to the finance team stays inside the company.",
+      "when": {"tools": ["remittance.send"], "recipient_domain_in": ["example.com"]},
+      "decision": "allow"
+    },
+    {
+      "id": "A5",
+      "reason": "A remittance that leaves the company is read by a person first.",
+      "when": {"tools": ["remittance.send"], "recipient_domain_not_in": ["example.com"]},
+      "decision": "ask",
+      "approver": "owner"
+    },
+    {
+      "id": "A6",
+      "reason": "Voiding a posted entry changes the books, so the controller approves.",
+      "when": {"tools": ["ledger.void_entry"]},
+      "decision": "ask",
+      "approver": "Casey Doyle"
+    },
+    {
+      "id": "A7",
+      "reason": "The month-end pack is read by the board, so the head of finance approves it.",
+      "when": {"tools": ["reports.publish_pack"]},
+      "decision": "ask",
+      "approver": "owner"
+    },
+    {
+      "id": "A8",
+      "reason": "Bank detail changes are blocked in this charter; see N1.",
+      "when": {"tools": ["vendors.update_bank_details"]},
+      "decision": "deny"
+    }
+  ],
+  "budget": {"currency": "USD", "per_action_max": 2500, "per_day_max": 10000, "per_month_max": 50000},
+  "audit": {"retention_days": 2555, "log_path": "ap-coworker-audit.jsonl"}
+}

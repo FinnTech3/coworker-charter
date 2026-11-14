@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "coworker-charter"
+version = "1.0.0"
+description = "Write, enforce and audit a charter for an AI coworker: tool tiers, approval rules, spend caps and a hash-chained audit log. Standard library only."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [{ name = "FinnTech3" }]
+keywords = ["ai-agents", "permissions", "approvals", "audit-log", "governance", "agent-skill"]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.5", "pyyaml>=6"]
+
+[project.scripts]
+charter-lint = "charter_lint:main"
+charter-check = "charter_check:main"
+audit-log = "audit_log:main"
+
+[project.urls]
+Homepage = "https://github.com/FinnTech3/coworker-charter"
+
+[tool.setuptools]
+py-modules = ["charter_lint", "charter_check", "audit_log"]
+package-dir = { "" = "agensi/coworker-charter/scripts" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["agensi/coworker-charter/scripts", "tools"]
+
+[tool.ruff]
+line-length = 120
+extend-exclude = ["docs/media-src"]
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"tools/**" = ["E501"]
+"tests/**" = ["E501"]

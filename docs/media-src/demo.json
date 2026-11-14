@@ -1,0 +1,113 @@
+{
+ "title": "coworker-charter: support coworker",
+ "cwd": "@WORK@",
+ "width": 900,
+ "rows": 43,
+ "wrap": 104,
+ "fontSize": 13,
+ "highlight": [
+  {
+   "re": "^decision: allow",
+   "cls": "green"
+  },
+  {
+   "re": "^decision: ask",
+   "cls": "yellow"
+  },
+  {
+   "re": "^decision: deny",
+   "cls": "red"
+  },
+  {
+   "re": "^(OK|logged)",
+   "cls": "green"
+  },
+  {
+   "re": "^BROKEN",
+   "cls": "red"
+  },
+  {
+   "re": "^\\s+line \\d+:",
+   "cls": "red"
+  },
+  {
+   "re": "^\\[exit 0\\]",
+   "cls": "green"
+  },
+  {
+   "re": "^\\[exit [12]\\]",
+   "cls": "red"
+  }
+ ],
+ "steps": [
+  {
+   "note": "# a support coworker's charter: lint it, then check what it wants to do against it"
+  },
+  {
+   "cmd": "python3 charter_lint.py lint charter.json --strict",
+   "exit": true,
+   "hold": 0.5
+  },
+  {
+   "cmd": "python3 charter_check.py charter.json --tool helpdesk.search --action \"Search open tickets\"",
+   "show": "python3 charter_check.py charter.json --tool helpdesk.search --action \"Search open tickets\"",
+   "maxLines": 2,
+   "exit": true,
+   "hold": 0.4
+  },
+  {
+   "cmd": "python3 charter_check.py charter.json --tool refunds.issue --action \"Refund order 1204\" --amount 42 --spent-today 8 --spent-month 8",
+   "show": "python3 charter_check.py charter.json --tool refunds.issue --action \"Refund order 1204\" --amount 42 ...",
+   "maxLines": 4,
+   "expectExit": [
+    1
+   ],
+   "exit": true,
+   "hold": 1.1
+  },
+  {
+   "cmd": "python3 charter_check.py charter.json --tool refunds.issue --action \"Refund order 1190\" --amount 140 --spent-today 8 --spent-month 8",
+   "show": "python3 charter_check.py charter.json --tool refunds.issue --action \"Refund order 1190\" --amount 140 ...",
+   "maxLines": 4,
+   "expectExit": [
+    1
+   ],
+   "exit": true,
+   "hold": 1.1
+  },
+  {
+   "note": "# log both decisions. Each entry carries the hash of the one before it"
+  },
+  {
+   "cmd": "python3 audit_log.py log audit.jsonl --charter charter.json --event - < ask.json",
+   "hold": 0.3
+  },
+  {
+   "cmd": "python3 audit_log.py log audit.jsonl --charter charter.json --event - < deny.json",
+   "hold": 0.3
+  },
+  {
+   "cmd": "python3 audit_log.py verify audit.jsonl",
+   "exit": true,
+   "hold": 0.7
+  },
+  {
+   "note": "# now someone shaves the approved refund from 42 to 4 in the log"
+  },
+  {
+   "cmd": "sed -i 's/\"amount\":42/\"amount\":4/' audit.jsonl"
+  },
+  {
+   "cmd": "python3 audit_log.py verify audit.jsonl",
+   "expectExit": [
+    1
+   ],
+   "exit": true,
+   "hold": 1.6
+  },
+  {
+   "note": "# caught, with the line number. Exit 1."
+  }
+ ],
+ "typeSeconds": 0.6
+}
